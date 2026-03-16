@@ -7,28 +7,30 @@ on:
 
 jobs:
   sonar:
-    name: SonarQube Scan Job
     runs-on: ubuntu-latest
 
-    steps:
+    services:
+      sonarqube:
+        image: sonarqube:community
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd="curl -f http://localhost:9000 || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
-      - name: Checkout Source Code
+    steps:
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
+      - name: Install SonarScanner
+        run: |
+          sudo apt update
+          sudo apt install sonar-scanner -y
 
-      - name: Install Dependencies
-        run: npm install
-
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v1.2.0
-        with:
-          args: >
-            -Dsonar.projectKey=sonar-node-app
-            -Dsonar.sources=.
+      - name: Run SonarQube Scan
+        run: sonar-scanner
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: http://172.16.42.108 172.17.0.1 
+          SONAR_HOST_URL: http://localhost:9000 
